@@ -1,0 +1,76 @@
+name: Build Slang on Rocky Linux 8
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main
+
+permissions:
+  contents: write  # tag時にRelease作成するため（不要ならreadに落とす）
+
+jobs:
+  build-rocky8:
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux/rockylinux:8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          dnf -y update
+          dnf -y install \
+            git curl tar gzip xz \
+            python3 \
+            ninja-build \
+            gcc-toolset-11-toolchain
+
+      - name: Install CMake (>= 3.20)
+        run: |
+          CMAKE_VER=3.29.6
+          ARCH=x86_64
+          curl -L -o cmake.sh "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-${ARCH}.sh"
+          sh cmake.sh --skip-license --prefix=/usr/local
+          cmake --version
+
+      - name: Configure & Build
+        run: |
+          # gcc-toolset-11 を有効化（環境によってパスが異なる場合はここを調整）
+          source /opt/rh/gcc-toolset-11/enable
+
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSLANG_INCLUDE_TESTS=ON \
+            -DSLANG_INCLUDE_TOOLS=ON
+
+          cmake --build build -j 2
+          ctest --test-dir build --output-on-failure
+
+      - name: Install into staging dir and package
+        run: |
+          cmake --install build --prefix "$PWD/stage"
+          tar -czf "slang-rocky8-x86_64.tar.gz" -C stage .
+          sha256sum "slang-rocky8-x86_64.tar.gz" > "slang-rocky8-x86_64.tar.gz.sha256"
+
+      - name: Upload artifact (for branch builds)
+        if: startsWith(github.ref, 'refs/heads/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: slang-rocky8-x86_64
+          path: |
+            slang-rocky8-x86_64.tar.gz
+            slang-rocky8-x86_64.tar.gz.sha256
+          retention-days: 14
+
+      - name: Create GitHub Release and upload assets (for tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            slang-rocky8-x86_64.tar.gz
+            slang-rocky8-x86_64.tar.gz.sha256
