@@ -21,6 +21,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: (Debug) List available GCC toolchains (dnf)
+        run: |
+          set -euxo pipefail
+
+          echo "=== OS ==="
+          cat /etc/os-release || true
+
+          echo "=== Enabled repos ==="
+          dnf -y makecache
+          dnf repolist -v
+
+          echo "=== DNF modules (gcc-toolset) ==="
+          # module が無い/無効な環境もあるので失敗しても続行
+          dnf -y install dnf-plugins-core || true
+          dnf module list gcc-toolset\* || true
+
+          echo "=== Available packages (gcc-toolset*) ==="
+          dnf list --available 'gcc-toolset*' || true
+
+          echo "=== Available compiler packages (gcc-toolset-*-gcc*) ==="
+          dnf list --available 'gcc-toolset-*-gcc*' || true
+
+          echo "=== Search results (gcc-toolset) ==="
+          dnf search gcc-toolset || true
+
+
       - name: Install build dependencies
         run: |
           dnf -y update
@@ -28,7 +54,9 @@ jobs:
             git curl tar gzip xz \
             python3 \
             make \
-            gcc-toolset-12-toolchain
+            gcc-toolset-15-runtime \
+            gcc-toolset-15-gcc \
+            gcc-toolset-15-gcc-c++
 
       - name: Install CMake (>= 3.20)
         run: |
@@ -40,8 +68,8 @@ jobs:
 
       - name: Configure & Build
         run: |
-          # gcc-toolset-11 を有効化（環境によってパスが異なる場合はここを調整）
-          source /opt/rh/gcc-toolset-12/enable
+          # gcc-toolset-15 を有効化（環境によってパスが異なる場合はここを調整）
+          source /opt/rh/gcc-toolset-15/enable
 
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
