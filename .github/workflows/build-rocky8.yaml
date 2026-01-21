@@ -27,7 +27,7 @@ jobs:
           dnf -y install \
             git curl tar gzip xz \
             python3 \
-            ninja-build \
+            make \
             gcc-toolset-11-toolchain
 
       - name: Install CMake (>= 3.20)
