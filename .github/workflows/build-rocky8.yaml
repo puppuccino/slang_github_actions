@@ -28,7 +28,7 @@ jobs:
             git curl tar gzip xz \
             python3 \
             make \
-            gcc-toolset-11-toolchain
+            gcc-toolset-13-toolchain
 
       - name: Install CMake (>= 3.20)
         run: |
@@ -41,7 +41,7 @@ jobs:
       - name: Configure & Build
         run: |
           # gcc-toolset-11 を有効化（環境によってパスが異なる場合はここを調整）
-          source /opt/rh/gcc-toolset-11/enable
+          source /opt/rh/gcc-toolset-13/enable
 
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
