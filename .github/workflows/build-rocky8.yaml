@@ -43,7 +43,7 @@ jobs:
           # gcc-toolset-11 を有効化（環境によってパスが異なる場合はここを調整）
           source /opt/rh/gcc-toolset-11/enable
 
-          cmake -S . -B build -G Ninja \
+          cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DSLANG_INCLUDE_TESTS=ON \
             -DSLANG_INCLUDE_TOOLS=ON
